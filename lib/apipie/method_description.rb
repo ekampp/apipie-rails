@@ -217,9 +217,11 @@ module Apipie
       example << "// #{ex[:title]}\n" if ex[:title].present?
       example << "#{ex[:verb]} #{ex[:path]}"
       example << "?#{ex[:query]}" unless ex[:query].blank?
-      example << "\n" << format_example_headers(ex[:headers]).to_s if ex[:headers]
+      example << "\n" << format_example_headers(ex[:request_headers]).to_s if ex[:request_headers]
       example << "\n" << format_example_data(ex[:request_data]).to_s if ex[:request_data]
+      example << "\n"
       example << "\n" << ex[:code].to_s
+      example << "\n" << format_example_headers(ex[:response_headers]).to_s if ex[:response_headers]
       example << "\n" << format_example_data(ex[:response_data]).to_s if ex[:response_data]
       example
     end
