@@ -13,6 +13,11 @@ module Apipie
         @query = env["QUERY_STRING"] unless env["QUERY_STRING"].blank?
         @params = Rack::Utils.parse_nested_query(@query)
         @params.merge!(env["action_dispatch.request.request_parameters"] || {})
+
+        request_headers = Hash[(Apipie.configuration.request_headers || []).collect { |h| [h, env["HTTP_#{h.to_s.upcase}"]] }]
+        request_headers_available = request_headers.reject { |k, v| v.blank? }
+        @request_headers = request_headers_available if request_headers_available.values.any?
+
         if data = parse_data(env["rack.input"].read)
           @request_data = data
           env["rack.input"].rewind
@@ -27,6 +32,10 @@ module Apipie
       end
 
       def analyse_response(response)
+        response_headers = Hash[(Apipie.configuration.response_headers || []).collect { |h| [h, response.headers[h]] }]
+        response_headers_available = response_headers.reject { |k, v| v.blank? }
+        @response_headers = response_headers_available if response_headers_available.values.any?
+
         if response.last.respond_to?(:body) && data = parse_data(response.last.body)
           @response_data = if response[1]['Content-Disposition'].to_s.start_with?('attachment')
                              '<STREAMED ATTACHMENT FILE>'
@@ -111,7 +120,9 @@ module Apipie
            :query => @query,
            :request_data => @request_data,
            :response_data => @response_data,
-           :code => @code}
+           :code => @code,
+           :request_headers => @request_headers,
+           :response_headers => @response_headers }
         else
           nil
         end
