@@ -28,6 +28,7 @@ module Apipie
 
       def analyse_controller(controller)
         @controller = controller.class
+        @request_data = controller.params.except(:controller, :action).permit!.to_hash
         @action = controller.params[:action]
       end
 
@@ -52,6 +53,11 @@ module Apipie
         @path = request.path
         @params = request.request_parameters
         if [:POST, :PUT, :PATCH, :DELETE].include?(@verb)
+          begin
+            raw_post = JSON.parse request.raw_post
+            (@params ||= {}).merge! raw_post if raw_post
+          rescue
+          end
           @request_data = @params
         else
           @query = request.query_string
