@@ -30,6 +30,10 @@ module Apipie
         @controller = controller.class
         @request_data = controller.params.except(:controller, :action).permit!.to_hash
         @action = controller.params[:action]
+
+        request_headers = Hash[(Apipie.configuration.request_headers || []).collect { |h| [h, controller.request.headers[h.to_s.to_sym]] }]
+        request_headers_available = request_headers.reject { |k, v| v.blank? }
+        @request_headers = request_headers_available if request_headers_available.values.any?
       end
 
       def analyse_response(response)
