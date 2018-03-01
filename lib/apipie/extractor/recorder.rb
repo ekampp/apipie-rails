@@ -28,12 +28,23 @@ module Apipie
 
       def analyse_controller(controller)
         @controller = controller.class
-        @request_data = controller.params.except(:controller, :action).permit!.to_hash
+        @request_data = truncate_param_values(
+          controller.params.except(:controller, :action).permit!.to_hash)
         @action = controller.params[:action]
 
         request_headers = Hash[(Apipie.configuration.request_headers || []).collect { |h| [h, controller.request.headers[h.to_s.to_sym]] }]
         request_headers_available = request_headers.reject { |k, v| v.blank? }
         @request_headers = request_headers_available if request_headers_available.values.any?
+      end
+
+      def truncate_param_values(params)
+        if params.is_a? Hash
+          Hash[params.collect { |k, v| [k, truncate_param_values(v)] }]
+        elsif params.is_a? Array
+          params.collect { |e| truncate_param_values e }
+        else
+          params.length > 100 ? "#{params[0..100]}..." : params
+        end
       end
 
       def analyse_response(response)
@@ -62,7 +73,7 @@ module Apipie
             (@params ||= {}).merge! raw_post if raw_post
           rescue
           end
-          @request_data = @params
+          @request_data = truncate_param_values @params
         else
           @query = request.query_string
         end
